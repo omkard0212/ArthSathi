@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import pool from "./db/pool";
+import usersRouter from "./routes/users";
 
 dotenv.config();
 
@@ -26,6 +27,8 @@ app.get("/api/db-health", async (_req, res) => {
     res.status(500).json({ status: "error", message: "Database connection failed" });
   }
 });
+
+app.use("/api/users", usersRouter);
 
 // Start server
 app.listen(PORT, () => {
