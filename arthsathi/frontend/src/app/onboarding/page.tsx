@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useLanguage } from "@/context/LanguageContext";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { useSpeechToText } from "@/hooks/useSpeechToText";
+import { VoiceButton } from "@/components/VoiceButton";
 
 const LANGUAGES = [
   { value: "English", label: "English" },
@@ -26,6 +29,10 @@ const GOALS = [
 export default function Onboarding() {
   const router = useRouter();
   const { language, setLanguage, t } = useLanguage();
+  const { speak, stop, isSpeaking, isSupported: ttsSupported } = useTextToSpeech();
+  const { startListening, stopListening, isListening, transcript, isSupported: sttSupported } = useSpeechToText();
+  const [inputMode, setInputMode] = useState<"voice" | "text">("text");
+
   const [formData, setFormData] = useState({
     language: "",
     monthlyIncome: "",
@@ -51,6 +58,37 @@ export default function Onboarding() {
   useEffect(() => {
     setFormData((prev) => ({ ...prev, language: language }));
   }, [language]);
+
+  // Stop speech on unmount
+  useEffect(() => {
+    return () => stop();
+  }, [stop]);
+
+  // Parse transcript into a number for the income field
+  useEffect(() => {
+    if (!transcript) return;
+    const digits = transcript.replace(/[^\d]/g, "");
+    if (digits) {
+      handleInputChange("monthlyIncome", digits);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transcript]);
+
+  function handleHeadingSpeak() {
+    if (isSpeaking) {
+      stop();
+    } else {
+      speak(`${t("tellUsAbout")}. ${t("shareDetails")}`);
+    }
+  }
+
+  function handleMicClick() {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  }
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -157,16 +195,55 @@ export default function Onboarding() {
         <div className="relative max-w-2xl mx-auto">
           {/* Header */}
           <div className="text-center mb-10">
-            <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-4">
-              {t("tellUsAbout")}
-            </h1>
-            <p className="text-lg text-slate-600">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <h1 className="animate-fade-up text-4xl sm:text-5xl font-extrabold text-[#0f172a]">
+                {t("tellUsAbout")}
+              </h1>
+              {ttsSupported && (
+                <VoiceButton
+                  variant="speak"
+                  active={isSpeaking}
+                  onClick={handleHeadingSpeak}
+                  ariaLabel={isSpeaking ? "Stop reading" : "Read heading aloud"}
+                />
+              )}
+            </div>
+            <p className="animate-fade-up delay-100 text-lg text-slate-500 mb-6">
               {t("shareDetails")}
             </p>
+
+            {/* Voice / Text toggle */}
+            <div className="animate-fade-up delay-200 inline-flex items-center gap-1 p-1 bg-slate-100 rounded-full">
+              <button
+                type="button"
+                onClick={() => setInputMode("text")}
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
+                  inputMode === "text"
+                    ? "bg-white text-[#0f172a] shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                📝 Text
+              </button>
+              <button
+                type="button"
+                onClick={() => setInputMode("voice")}
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
+                  inputMode === "voice"
+                    ? "bg-white text-emerald-700 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                🎤 Voice
+              </button>
+            </div>
+            {inputMode === "voice" && (
+              <p className="mt-2 text-xs text-emerald-600 font-medium">Voice mode on — use the mic icon to fill fields</p>
+            )}
           </div>
 
           {/* Form Card */}
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-8 sm:p-10">
+          <div className="animate-fade-up delay-200 bg-white rounded-2xl shadow-[0_4px_24px_-4px_rgba(15,23,42,0.1)] border border-slate-200/80 p-8 sm:p-10">
             <form onSubmit={handleSubmit} className="space-y-8">
               {/* Language Preference */}
               <div>
@@ -180,11 +257,11 @@ export default function Onboarding() {
                   id="language"
                   value={formData.language}
                   onChange={(e) => handleInputChange("language", e.target.value)}
-                  className={`w-full px-4 py-3 rounded-lg border ${
+                  className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-slate-900 transition-all duration-200 focus:outline-none focus:ring-0 ${
                     touched.language && errors.language
-                      ? "border-red-400 focus:ring-red-400"
-                      : "border-slate-300 focus:ring-emerald-500"
-                  } focus:ring-2 focus:outline-none text-slate-900 bg-white transition-all`}
+                      ? "border-red-400"
+                      : "border-slate-200 hover:border-slate-300 focus:border-emerald-500"
+                  }`}
                 >
                   <option value="">{t("selectLanguage")}</option>
                   {LANGUAGES.map((lang) => (
@@ -206,20 +283,43 @@ export default function Onboarding() {
                 >
                   {t("monthlyIncome")}
                 </label>
-                <input
-                  type="number"
-                  id="monthlyIncome"
-                  min="0"
-                  step="1"
-                  value={formData.monthlyIncome}
-                  onChange={(e) => handleInputChange("monthlyIncome", e.target.value)}
-                  placeholder={t("enterIncome")}
-                  className={`w-full px-4 py-3 rounded-lg border ${
-                    touched.monthlyIncome && errors.monthlyIncome
-                      ? "border-red-400 focus:ring-red-400"
-                      : "border-slate-300 focus:ring-emerald-500"
-                  } focus:ring-2 focus:outline-none text-slate-900 transition-all`}
-                />
+                <div className="relative">
+                  <input
+                    type="number"
+                    id="monthlyIncome"
+                    min="0"
+                    step="1"
+                    value={formData.monthlyIncome}
+                    onChange={(e) => handleInputChange("monthlyIncome", e.target.value)}
+                    placeholder={t("enterIncome")}
+                    className={`w-full px-4 py-3 rounded-xl border-2 text-slate-900 transition-all duration-200 focus:outline-none focus:ring-0 ${
+                      sttSupported ? "pr-12" : ""
+                    } ${
+                      touched.monthlyIncome && errors.monthlyIncome
+                        ? "border-red-400"
+                        : isListening
+                        ? "border-emerald-500"
+                        : "border-slate-200 hover:border-slate-300 focus:border-emerald-500"
+                    }`}
+                  />
+                  {sttSupported && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <VoiceButton
+                        variant="listen"
+                        active={isListening}
+                        onClick={handleMicClick}
+                        size="sm"
+                        ariaLabel={isListening ? "Stop listening" : "Speak your income"}
+                      />
+                    </div>
+                  )}
+                </div>
+                {isListening && (
+                  <p className="mt-1.5 text-xs text-emerald-600 font-medium flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
+                    Listening…
+                  </p>
+                )}
                 {touched.monthlyIncome && errors.monthlyIncome && (
                   <p className="mt-2 text-sm text-red-600">{errors.monthlyIncome}</p>
                 )}
@@ -241,11 +341,11 @@ export default function Onboarding() {
                   value={formData.existingDebts}
                   onChange={(e) => handleInputChange("existingDebts", e.target.value)}
                   placeholder={t("enterDebts")}
-                  className={`w-full px-4 py-3 rounded-lg border ${
+                  className={`w-full px-4 py-3 rounded-xl border-2 text-slate-900 transition-all duration-200 focus:outline-none focus:ring-0 ${
                     touched.existingDebts && errors.existingDebts
-                      ? "border-red-400 focus:ring-red-400"
-                      : "border-slate-300 focus:ring-emerald-500"
-                  } focus:ring-2 focus:outline-none text-slate-900 transition-all`}
+                      ? "border-red-400"
+                      : "border-slate-200 hover:border-slate-300 focus:border-emerald-500"
+                  }`}
                 />
                 {touched.existingDebts && errors.existingDebts && (
                   <p className="mt-2 text-sm text-red-600">{errors.existingDebts}</p>
@@ -263,23 +363,24 @@ export default function Onboarding() {
                       key={goal.id}
                       type="button"
                       onClick={() => handleGoalSelect(goal.id)}
-                      className={`p-4 rounded-xl border-2 transition-all text-left ${
+                      className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${
                         formData.goal === goal.id
-                          ? "border-emerald-600 bg-emerald-50 shadow-md"
-                          : "border-slate-200 bg-white hover:border-emerald-300 hover:bg-emerald-50/50"
+                          ? "border-emerald-500 bg-emerald-50 shadow-sm ring-1 ring-emerald-200"
+                          : "border-slate-200 bg-white hover:border-emerald-300 hover:bg-slate-50"
                       }`}
                     >
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">{goal.icon}</span>
-                        <span
-                          className={`font-medium ${
-                            formData.goal === goal.id
-                              ? "text-emerald-900"
-                              : "text-slate-700"
-                          }`}
-                        >
-                          {t(goal.labelKey)}
-                        </span>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">{goal.icon}</span>
+                          <span className={`font-medium text-sm ${formData.goal === goal.id ? "text-emerald-800" : "text-slate-700"}`}>
+                            {t(goal.labelKey)}
+                          </span>
+                        </div>
+                        {formData.goal === goal.id && (
+                          <svg className="w-4 h-4 text-emerald-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
                       </div>
                     </button>
                   ))}
@@ -292,24 +393,17 @@ export default function Onboarding() {
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full group relative px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-lg font-semibold rounded-full shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-300 ease-out"
+                className="w-full group relative px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-lg font-semibold rounded-full shadow-md hover:shadow-emerald-200 hover:shadow-xl transform hover:-translate-y-0.5 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 ease-out overflow-hidden"
               >
                 <span className="relative z-10">{t("findSchemes")}</span>
-                <div className="absolute inset-0 bg-gradient-to-r from-emerald-700 to-teal-700 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                
-                {/* Arrow Icon */}
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-700 to-teal-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                 <svg
-                  className="inline-block ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300"
+                  className="relative z-10 inline-block ml-2 w-5 h-5 group-hover:translate-x-1.5 transition-transform duration-200"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 7l5 5m0 0l-5 5m5-5H6"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </button>
             </form>

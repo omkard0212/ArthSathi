@@ -1,8 +1,11 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { SCHEMES } from "@/data/schemes";
 import { useLanguage } from "@/context/LanguageContext";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
+import { VoiceButton } from "@/components/VoiceButton";
 
 // Helper function to get badge styles based on category
 const getBadgeStyles = (color: string) => {
@@ -17,6 +20,22 @@ const getBadgeStyles = (color: string) => {
 
 export default function Schemes() {
   const { t } = useLanguage();
+  const { speak, stop, isSpeaking, isSupported: ttsSupported } = useTextToSpeech();
+  const [speakingId, setSpeakingId] = useState<number | null>(null);
+
+  useEffect(() => {
+    return () => stop();
+  }, [stop]);
+
+  function handleCardSpeak(scheme: (typeof SCHEMES)[0]) {
+    if (speakingId === scheme.id && isSpeaking) {
+      stop();
+      setSpeakingId(null);
+    } else {
+      setSpeakingId(scheme.id);
+      speak(`${scheme.name}. ${scheme.description}`);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50">
@@ -60,37 +79,25 @@ export default function Schemes() {
         <div className="relative max-w-7xl mx-auto">
           {/* Header Section */}
           <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl shadow-lg mb-6">
-              <svg
-                className="w-8 h-8 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
+            <div className="animate-fade-up inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl shadow-lg mb-6">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 mb-4">
+            <h1 className="animate-fade-up delay-100 text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[#0f172a] mb-4">
               {t("schemesForYou")}
             </h1>
-            
-            <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto">
+            <p className="animate-fade-up delay-200 text-lg sm:text-xl text-slate-500 max-w-2xl mx-auto">
               {t("basedOnProfile")}
             </p>
           </div>
 
           {/* Schemes Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
-            {SCHEMES.map((scheme) => (
+            {SCHEMES.map((scheme, index) => (
               <div
                 key={scheme.id}
-                className="group bg-white rounded-2xl border border-slate-200 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden"
+                className={`scheme-card animate-fade-up bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_12px_-2px_rgba(15,23,42,0.08)] overflow-hidden delay-${(index + 2) * 100}`}
               >
                 <div className="p-6 sm:p-8">
                   {/* Icon and Category Badge Row */}
@@ -99,19 +106,27 @@ export default function Schemes() {
                     <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-slate-100 to-slate-50 rounded-xl flex items-center justify-center text-3xl border border-slate-200">
                       {scheme.icon}
                     </div>
-                    
-                    {/* Category Badge */}
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold border ${getBadgeStyles(
-                        scheme.categoryColor
-                      )}`}
-                    >
-                      {t(scheme.categoryKey)}
-                    </span>
+
+                    {/* Badges */}
+                    <div className="flex items-center gap-2 flex-wrap justify-end">
+                      {/* Best Match badge — first card only */}
+                      {scheme.id === 1 && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                          Best Match
+                        </span>
+                      )}
+                      {/* Category Badge */}
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getBadgeStyles(scheme.categoryColor)}`}>
+                        {t(scheme.categoryKey)}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Scheme Name */}
-                  <h3 className="text-2xl font-bold text-slate-900 mb-3 group-hover:text-emerald-700 transition-colors">
+                  <h3 className="text-2xl font-bold text-[#0f172a] mb-3 group-hover:text-emerald-700 transition-colors duration-200">
                     {t(scheme.nameKey)}
                   </h3>
 
@@ -143,28 +158,29 @@ export default function Schemes() {
                     </div>
                   </div>
 
-                  {/* Know More Button */}
-                  <Link href={`/schemes/${scheme.slug}`}>
-                    <button
-                      className="group/btn w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all duration-300 flex items-center justify-center gap-2"
-                      aria-label={`Learn more about ${t(scheme.nameKey)}`}
-                    >
-                      <span>{t("knowMore")}</span>
-                      <svg
-                        className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform duration-300"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                  {/* Know More Button + Speaker */}
+                  <div className="flex items-center gap-3">
+                    <Link href={`/schemes/${scheme.slug}`}>
+                      <button
+                        className="group/btn w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-xl shadow-sm hover:shadow-md hover:shadow-emerald-100 transform hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
+                        aria-label={`Learn more about ${t(scheme.nameKey)}`}
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13 7l5 5m0 0l-5 5m5-5H6"
-                        />
-                      </svg>
-                    </button>
-                  </Link>
+                        <span>{t("knowMore")}</span>
+                        <svg className="w-4 h-4 group-hover/btn:translate-x-1.5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                      </button>
+                    </Link>
+                    {ttsSupported && (
+                      <VoiceButton
+                        variant="speak"
+                        active={speakingId === scheme.id && isSpeaking}
+                        onClick={() => handleCardSpeak(scheme)}
+                        size="sm"
+                        ariaLabel={speakingId === scheme.id && isSpeaking ? "Stop reading" : `Read ${scheme.name} aloud`}
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
