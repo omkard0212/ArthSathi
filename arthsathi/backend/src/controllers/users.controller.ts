@@ -83,3 +83,27 @@ export async function createUser(req: Request, res: Response): Promise<void> {
     res.status(500).json({ error: "An internal server error occurred" });
   }
 }
+
+export async function getUserById(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      `SELECT id, phone_number, full_name, preferred_language, interaction_mode,
+              aadhaar_verified, created_at, updated_at
+       FROM users
+       WHERE id = $1`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    res.status(200).json(result.rows[0]);
+  } catch (err) {
+    console.error("[getUserById] Unexpected error:", err);
+    res.status(500).json({ error: "An internal server error occurred" });
+  }
+}
