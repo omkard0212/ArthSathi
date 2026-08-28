@@ -3,6 +3,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import pool from "./db/pool";
 import usersRouter from "./routes/users";
+import financialProfilesRouter from "./routes/financial-profiles";
+import schemesRouter from "./routes/schemes";
 
 dotenv.config();
 
@@ -29,6 +31,8 @@ app.get("/api/db-health", async (_req, res) => {
 });
 
 app.use("/api/users", usersRouter);
+app.use("/api/financial-profiles", financialProfilesRouter);
+app.use("/api/schemes", schemesRouter);
 
 // Start server
 app.listen(PORT, () => {

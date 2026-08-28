@@ -152,8 +152,12 @@ export default function Onboarding() {
     e.preventDefault();
 
     if (validateForm()) {
-      // Navigate to schemes page
-      router.push("/schemes");
+      // Navigate to schemes page with user profile as query params (no DB yet on frontend)
+      const params = new URLSearchParams({
+        goal: formData.goal,
+        income: formData.monthlyIncome,
+      });
+      router.push(`/schemes?${params.toString()}`);
     }
   };
 
