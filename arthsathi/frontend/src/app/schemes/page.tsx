@@ -135,8 +135,8 @@ export default function Schemes() {
             {/* Show what was matched on */}
             {goal && (
               <p className="animate-fade-up delay-300 mt-3 text-sm text-emerald-600 font-medium">
-                Matched for: <span className="capitalize">{goal.replace("_", " ")}</span>
-                {income && ` · Monthly income: ₹${Number(income).toLocaleString("en-IN")}`}
+                Matched for: <span className="capitalize">{goal.replace(/_/g, " ")}</span>
+                {income && Number(income) > 0 && ` · Monthly income: ₹${Number(income).toLocaleString("en-IN")}`}
               </p>
             )}
           </div>

@@ -31,26 +31,17 @@ export default function Home() {
       {/* Navbar */}
       <nav className="border-b border-slate-200 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="flex items-center h-16">
+          <div className="flex items-center justify-between h-16 w-full">
             <div className="flex items-center gap-2">
-              {/* Financial Icon */}
-              <svg
-                className="w-8 h-8 text-emerald-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
+              <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span className="text-2xl font-bold text-slate-900 hover:text-emerald-700 transition-colors cursor-pointer">
-                {t("appName")}
-              </span>
+              <span className="text-2xl font-bold text-slate-900">{t("appName")}</span>
+            </div>
+            <div className="hidden sm:flex items-center gap-6 text-sm font-medium text-slate-500">
+              <Link href="/onboarding" className="hover:text-emerald-600 transition-colors">Get Started</Link>
+              <Link href="/document-safety" className="hover:text-emerald-600 transition-colors">📄 Document Safety</Link>
+              <Link href="/schemes" className="hover:text-emerald-600 transition-colors">Schemes</Link>
             </div>
           </div>
         </div>
@@ -114,20 +105,20 @@ export default function Home() {
                 </div>
               )}
 
-              {/* CTA Button */}
-              <div className="animate-fade-up delay-300">
+              {/* CTA Buttons */}
+              <div className="animate-fade-up delay-300 flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href="/onboarding">
                   <button className="group relative px-8 py-4 sm:px-10 sm:py-5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-lg sm:text-xl font-semibold rounded-full shadow-lg hover:shadow-emerald-200 hover:shadow-2xl transform hover:-translate-y-0.5 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200 ease-out">
                     <span className="relative z-10">{t("getStarted")}</span>
                     <div className="absolute inset-0 bg-gradient-to-r from-emerald-700 to-teal-700 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                    <svg
-                      className="relative z-10 inline-block ml-2 w-5 h-5 group-hover:translate-x-1.5 transition-transform duration-200"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
+                    <svg className="relative z-10 inline-block ml-2 w-5 h-5 group-hover:translate-x-1.5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
+                  </button>
+                </Link>
+                <Link href="/document-safety">
+                  <button className="group px-8 py-4 sm:px-10 sm:py-5 border-2 border-slate-200 text-slate-600 text-lg sm:text-xl font-semibold rounded-full hover:border-amber-400 hover:text-amber-700 hover:bg-amber-50 transition-all duration-200">
+                    📄 Check a Document
                   </button>
                 </Link>
               </div>
@@ -198,15 +189,15 @@ export default function Home() {
             </div>
 
             {/* Pillar 3 — Document Safety */}
-            <div className="group p-8 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+            <Link href="/document-safety" className="group p-8 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300 block">
               <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mb-6">
                 <svg className="w-6 h-6 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-[#0f172a] mb-3">Document Safety</h3>
+              <h3 className="text-xl font-bold text-[#0f172a] mb-3">Document Safety →</h3>
               <p className="text-slate-500 leading-relaxed text-sm">Before you sign any agreement — land, loan, or contract — photograph it. We summarize every clause in your language, flag risky terms, and answer your questions so you know exactly what you're signing.</p>
-            </div>
+            </Link>
           </div>
         </div>
       </section>

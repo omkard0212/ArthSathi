@@ -206,6 +206,12 @@ export default function Roadmap() {
               </svg>
             </Link>
             <Link
+              href="/document-safety"
+              className="px-6 py-3 border-2 border-amber-200 text-amber-700 font-semibold rounded-full hover:border-amber-400 hover:bg-amber-50 transition-all duration-200 flex items-center justify-center gap-2"
+            >
+              📄 Check a Document
+            </Link>
+            <Link
               href="/onboarding"
               className="px-6 py-3 border-2 border-slate-200 text-slate-600 font-semibold rounded-full hover:border-emerald-300 hover:text-emerald-700 transition-all duration-200 flex items-center justify-center"
             >

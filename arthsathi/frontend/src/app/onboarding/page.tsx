@@ -148,17 +148,105 @@ export default function Onboarding() {
     return !Object.values(newErrors).some((error) => error !== "");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+  const [isReturningUser, setIsReturningUser] = useState(false);
+
+  // Look up returning user when phone number is entered (10 digits)
+  useEffect(() => {
+    const digits = phoneNumber.replace(/\D/g, "");
+    if (digits.length !== 10) { setIsReturningUser(false); return; }
+
+    (async () => {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/users/${digits}`);
+        if (res.ok) {
+          const user = await res.json();
+          setIsReturningUser(true);
+          if (user.preferred_language) {
+            handleInputChange("language", user.preferred_language);
+          }
+          // Try to pre-fill financial profile
+          const profileRes = await fetch(`${BACKEND_URL}/api/financial-profiles/${user.id}`);
+          if (profileRes.ok) {
+            const profile = await profileRes.json();
+            setFormData((prev) => ({
+              ...prev,
+              monthlyIncome: String(profile.monthly_income || ""),
+              existingDebts: String(profile.existing_debts || ""),
+              goal: profile.goal_category || "",
+            }));
+          }
+        } else {
+          setIsReturningUser(false);
+        }
+      } catch {
+        setIsReturningUser(false);
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phoneNumber]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (validateForm()) {
-      const params = new URLSearchParams({
-        goal:   formData.goal,
-        income: formData.monthlyIncome,
-        debts:  formData.existingDebts,
+    if (!validateForm()) return;
+
+    const params = new URLSearchParams({
+      goal:   formData.goal,
+      income: formData.monthlyIncome,
+      debts:  formData.existingDebts,
+    });
+
+    // Fire-and-forget: save to backend if available, navigate regardless
+    try {
+      const phone = phoneNumber.replace(/\D/g, "") || "9000000000";
+
+      // 1. Create user (or ignore 409 if already exists)
+      const userRes = await fetch(`${BACKEND_URL}/api/users`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone_number: phone,
+          preferred_language: formData.language,
+          interaction_mode: inputMode,
+        }),
       });
-      router.push(`/roadmap?${params.toString()}`);
+
+      let userId: string | null = null;
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        userId = userData?.id ?? null;
+      } else if (userRes.status === 409) {
+        // Returning user — look up their ID
+        const lookupRes = await fetch(`${BACKEND_URL}/api/users/${phone}`);
+        if (lookupRes.ok) {
+          const existing = await lookupRes.json();
+          userId = existing?.id ?? null;
+        }
+      }
+
+      // 2. Upsert financial profile
+      if (userId) {
+        await fetch(`${BACKEND_URL}/api/financial-profiles/${userId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            monthly_income: Number(formData.monthlyIncome),
+            existing_debts: Number(formData.existingDebts),
+            goal_category: formData.goal === "wedding" ? "marriage"
+              : formData.goal === "house" ? "health"
+              : formData.goal,
+          }),
+        });
+      }
+    } catch {
+      // Backend offline — silently continue, UI still works
     }
+
+    router.push(`/roadmap?${params.toString()}`);
   };
 
   return (
@@ -249,6 +337,40 @@ export default function Onboarding() {
           {/* Form Card */}
           <div className="animate-fade-up delay-200 bg-white rounded-2xl shadow-[0_4px_24px_-4px_rgba(15,23,42,0.1)] border border-slate-200/80 p-8 sm:p-10">
             <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Phone Number */}
+              <div>
+                <label htmlFor="phone" className="block text-sm font-semibold text-slate-900 mb-2">
+                  Mobile Number (Optional)
+                </label>
+                <div className="flex gap-2">
+                  <span className="inline-flex items-center px-3 py-3 rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-500 text-sm font-medium select-none">
+                    +91
+                  </span>
+                  <input
+                    type="tel"
+                    id="phone"
+                    maxLength={10}
+                    value={phoneNumber}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/\D/g, "").slice(0, 10);
+                      setPhoneNumber(v);
+                      setPhoneError(v.length > 0 && v.length < 10 ? "Enter a valid 10-digit number" : "");
+                    }}
+                    placeholder="Enter mobile number to save progress"
+                    className="flex-1 px-4 py-3 rounded-xl border-2 border-slate-200 hover:border-slate-300 focus:border-emerald-500 text-slate-900 transition-colors focus:outline-none"
+                    aria-label="Mobile number"
+                  />
+                </div>
+                {isReturningUser && (
+                  <p className="mt-2 text-sm text-emerald-600 font-medium flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                    Welcome back! Your saved profile has been loaded.
+                  </p>
+                )}
+                {phoneError && <p className="mt-2 text-sm text-red-600">{phoneError}</p>}
+                <p className="mt-1 text-xs text-slate-400">Saves your progress so you can return anytime</p>
+              </div>
+
               {/* Language Preference */}
               <div>
                 <label

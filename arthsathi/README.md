@@ -46,6 +46,11 @@ createdb arthsathi
 psql arthsathi < src/db/schema.sql
 ```
 
+Seed the schemes catalogue:
+```bash
+psql arthsathi < src/db/seed.sql
+```
+
 Start the dev server:
 ```bash
 npm run dev
@@ -55,8 +60,11 @@ npm run dev
 **Available endpoints:**
 - `GET  /api/health` — liveness check
 - `GET  /api/db-health` — database check
+- `GET  /api/users/:phone` — look up user by phone number
 - `POST /api/users` — register a user
-- `POST /api/financial-profiles` — save income/debts/goals
+- `GET  /api/financial-profiles/:userId` — retrieve a user's financial profile
+- `PUT  /api/financial-profiles/:userId` — create or update a user's financial profile
+- `POST /api/financial-profiles` — create a financial profile (legacy)
 - `GET  /api/schemes/match?goal=&income=` — get matched schemes
 
 ---
@@ -80,11 +88,12 @@ npm run dev
 ```
 
 **Pages:**
-- `/` — Landing page
-- `/onboarding` — User profile form
+- `/` — Landing page with nav links
+- `/onboarding` — User profile form (with phone lookup for returning users)
 - `/roadmap` — Personalised financial roadmap
-- `/schemes` — Matched government schemes
+- `/schemes` — Matched government schemes (8 schemes)
 - `/schemes/[slug]` — Scheme detail
+- `/document-safety` — Document Safety Check (photo upload → AI summary → risky clause flags → Q&A)
 
 ---
 
