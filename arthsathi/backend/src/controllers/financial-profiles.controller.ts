@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import pool from "../db/pool";
 
-const VALID_GOALS = ["marriage", "education", "business", "health", "house"];
+const VALID_GOALS = ["marriage", "education", "business", "health"];
 
 export async function getFinancialProfile(req: Request, res: Response): Promise<void> {
   const { userId } = req.params;
